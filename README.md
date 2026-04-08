@@ -42,7 +42,8 @@ gcloud auth application-default login
 
 # 4. Download the Instagram Influencer dataset
 # From: https://sites.google.com/site/sbkimcv/dataset/instagram-influencer-dataset
-# Extract to data/raw/
+# Place all downloaded files (zips + post_info.txt) in data/raw/
+# Zips are auto-extracted and images resized to 256x256 on first run
 
 # 5. Run the agent (main entry point)
 # (auto-creates dataset split + uploads images to GCS on first run)
@@ -182,14 +183,35 @@ https://sites.google.com/site/sbkimcv/dataset/instagram-influencer-dataset
 
 Specifically, you need **II. Influencer and Brand Dataset: Sponsorship Detection**, which requires requesting access from the dataset authors. Follow the instructions on the page to request access.
 
-Once you have the dataset, extract it into `data/raw/` so the structure looks like:
+Once you have the dataset, place all the downloaded files into `data/raw/`:
 
 ```
 data/raw/
-├── post_info.txt              # Annotation file
-├── img_resized/               # Post images
-└── users_influencers_SPOD/    # Influencer profile files
+├── post_info.txt              # Annotation file (download as-is)
+├── img_fi01.zip               # Image zip files (up to 16)
+├── img_fi02.zip
+├── ...
+├── img_fi16.zip
+├── json_files.zip             # Post JSON metadata
+├── profiles_influencers.zip   # Influencer profile files
+└── profiles_brands.zip        # Brand profile files
 ```
+
+**Automatic extraction:** On first run, the agent will automatically extract the zip files and resize all images to 256x256. After extraction, the directory will contain:
+
+```
+data/raw/
+├── post_info.txt
+├── img_resized/               # Extracted + resized post images (256x256)
+├── json/                      # Extracted JSON metadata
+├── users_influencers_SPOD/    # Extracted influencer profiles
+├── users_brands_SPOD/         # Extracted brand profiles
+├── img_fi01.zip               # Original zips (can be deleted after extraction)
+├── ...
+└── profiles_brands.zip
+```
+
+Extraction is idempotent — if the target directories already exist and are non-empty, they are skipped.
 
 The `users_influencers_SPOD/` directory contains influencer profile metadata needed for training. If you place it somewhere other than the default (`data/users_influencers_SPOD`), either:
 - Set `INFLUENCER_DATASET_PATH` in your `.env` file, or
@@ -233,7 +255,7 @@ uv run python -m src.ad_performance_agent.agent \
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--dataset-size` | `top20` | Dataset subset: `top20`, `top100`, `1k`, `10k` |
+| `--dataset-size` | `top20` | Dataset subset: `top20`, `top100` |
 | `--model-type` | `xgboost` | Downstream model: `xgboost`, `lightgbm`, or `transformer` |
 | `--iterations` | `20` | Number of prompt optimization iterations |
 | `--optimize-method` | `llm` | Optimization approach: `llm` (Gemini-based) or `few_shot` (Vertex AI Few-Shot Optimizer) |

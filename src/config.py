@@ -9,7 +9,7 @@ PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
 
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 REGION = os.getenv("REGION")
-USE_VERTEX = os.getenv("GOOGLE_CLOUD_LOCATION", "True").upper() == "TRUE"
+USE_VERTEX = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "True").upper() == "TRUE"
 API_KEY = os.getenv("GOOGLE_API_KEY", "")
 AGENT_LLM_MODEL: str = os.getenv("AGENT_LLM_MODEL", "gemini-3-pro-preview")
 CAPTION_LLM_MODEL: str = os.getenv("CAPTION_LLM_MODEL", "gemini-2.5-flash")
