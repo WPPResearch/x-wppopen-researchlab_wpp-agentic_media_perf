@@ -291,30 +291,3 @@ def delete_local_folder(local_folder_path: str):
         logger.error(f"Error deleting folder '{local_folder_path}': {e.strerror}")
     except Exception as e:
         logger.error(f"An unexpected error occurred during deletion: {e}")
-
-
-if __name__ == "__main__":
-    # --- Configuration ---
-    GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME", "your-bucket-name")
-    # Example: upload a local folder to GCS
-    # upload_folder_to_gcs(GCS_BUCKET_NAME, "data/my-local-data", "project-files/uploads")
-    # with open(os.path.join(LOCAL_FOLDER_TO_UPLOAD, "subfolder", "file2.txt"), "w") as f:
-    #     f.write("This is the second file inside a subfolder.")
-    # logger.info("Dummy files created.")
-    #
-    # # 2. Upload the folder to GCS and get the list of uploaded files
-    # uploaded_files = upload_folder_to_gcs(
-    #     GCS_BUCKET_NAME,
-    #     LOCAL_FOLDER_TO_UPLOAD,
-    #     GCS_DESTINATION_FOLDER,
-    # )
-    # Example: download a batch prediction output
-    output_uri = "gs://your-bucket/agentic-media-perf/batch_jobs/predictions.jsonl"
-    bucket_name = output_uri.split("gs://")[-1].split("/")[0]
-    blob_path = "/".join(output_uri.split("gs://")[-1].split("/")[1:])
-    local_path = download_file_from_gcs(
-        bucket_name=bucket_name,
-        gcs_blob_name=blob_path,
-        local_destination_path="data/pred.jsonl",
-    )
-    print(f"Downloaded to: {local_path}")

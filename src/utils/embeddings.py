@@ -4,7 +4,6 @@ import logging
 from typing import List
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +36,20 @@ def generate_embeddings(
     Returns:
         numpy array of shape (len(texts), embedding_dim).
     """
-    model = SentenceTransformer(model_name, trust_remote_code=trust_remote_code)
-    dim = model.get_sentence_embedding_dimension()
+    from sentence_transformers import SentenceTransformer
+
+    device = "cpu"
+    try:
+        import torch
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif torch.backends.mps.is_available():
+            device = "mps"
+    except ImportError:
+        pass
+
+    model = SentenceTransformer(model_name, trust_remote_code=trust_remote_code, device=device)
+    dim = model.get_embedding_dimension()
     logger.info("Encoding %d texts with %s (dim=%d)", len(texts), model_name, dim)
 
     embeddings = model.encode(

@@ -610,18 +610,10 @@ agentic-media-perf/
 │   │   ├── prompts.py                 # Prompt templates
 │   │   ├── multimodal_to_text.py      # Multimodal response handling
 │   │   └── utils.py                   # LLM helpers
-│   ├── tests/                          # Test scripts
-│   │   ├── test_checkpoint_system.py  # Experiment tracker test
-│   │   └── test_temporal_text.py      # Temporal text feature test
-│   ├── docs/                           # Documentation
-│   │   ├── CHECKPOINT_SYSTEM.md       # Experiment tracking guide
-│   │   └── SOLUTIONS_SUMMARY.md       # Approach comparison & roadmap
 │   └── config.py                       # Global configuration
 ├── dev/                                # Development scripts & notebooks
 │   ├── embeds_benchmark.py            # Embedding model benchmark
 │   ├── test_loader_check.py           # Data loader check script
-│   └── notebooks/
-│       └── dataset_visualization.ipynb
 ├── data/
 │   └── raw/                            # Raw dataset (download here)
 ├── checkpoints/                        # Training experiment outputs
@@ -713,4 +705,4 @@ gcloud auth application-default login
 
 ## License
 
-MIT License - See LICENSE file for details.
+Apache 2.0 - See LICENSE file for details.

@@ -11,12 +11,10 @@ def initialize_gemini_client():
     # The original script prioritized Vertex if USE_VERTEX is true.
 
     if USE_VERTEX and PROJECT_ID and REGION:
-        print(
-            f"Initializing Gemini Client with Vertex AI (Project: {PROJECT_ID}, Region: {REGION})"
-        )
+        print("Initializing Gemini Client with Vertex AI")
         return genai.Client(vertexai=True, project=PROJECT_ID, location=REGION)
     elif API_KEY:
-        print("Initializing Gemini Client with API Key")
+        print("Initializing Gemini Client")
         os.environ["GEMINI_API_KEY"] = API_KEY
         return genai.Client(api_key=API_KEY)
     else:

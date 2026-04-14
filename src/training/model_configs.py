@@ -1,5 +1,7 @@
 """Shared model hyperparameter configurations for tree-based regressors."""
 
+# n_jobs=1: forced single-threaded to avoid macOS libomp segfault when
+# XGBoost/LightGBM and torch coexist in the same process.
 DEFAULT_XGBOOST_PARAMS = {
     "n_estimators": 300,
     "learning_rate": 0.05,
@@ -8,7 +10,7 @@ DEFAULT_XGBOOST_PARAMS = {
     "subsample": 0.8,
     "colsample_bytree": 0.8,
     "random_state": 42,
-    "n_jobs": -1,
+    "n_jobs": 1,
 }
 
 DEFAULT_LIGHTGBM_PARAMS = {
@@ -20,6 +22,6 @@ DEFAULT_LIGHTGBM_PARAMS = {
     "subsample": 0.8,
     "colsample_bytree": 0.8,
     "random_state": 42,
-    "n_jobs": -1,
+    "n_jobs": 1,
     "verbose": -1,
 }

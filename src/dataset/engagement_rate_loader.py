@@ -83,11 +83,3 @@ def load_engagement_rate_data(
             df.nlargest(5, "y")[["influencer_name", "likes", "followers", "y"]])
 
     return df
-
-
-if __name__ == "__main__":
-    data_dir = "data/influencer_dataset_top20_min100posts_nonsponsored"
-    text_dir = "checkpoints/run_20260314_124407/it_3/text_output"
-    logging.basicConfig(level=logging.INFO)
-    df = load_engagement_rate_data(data_dir, text_dir=text_dir, min_followers=100)
-    print(df.head())

@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
@@ -247,6 +246,8 @@ def train_with_features(df: pd.DataFrame, embedding_model: str = "all-mpnet-base
 
         # Generate text embeddings
         tracker.log("\n=== Generating Embeddings ===")
+        from sentence_transformers import SentenceTransformer
+
         model = SentenceTransformer(embedding_model)
         text_embeddings = model.encode(df["text"].tolist(), show_progress_bar=True)
 

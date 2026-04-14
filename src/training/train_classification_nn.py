@@ -88,7 +88,7 @@ class InstagramPostClassifier(pl.LightningModule):
 
 
 def main(args):
-    DATA_DIR = args.data_dir  # os.path.join(BASE_DIR, "data", dataset_folder)
+    DATA_DIR = args.data_dir
 
     print(f"Loading data from {DATA_DIR}...")
 

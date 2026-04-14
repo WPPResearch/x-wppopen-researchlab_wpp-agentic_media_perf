@@ -1,3 +1,4 @@
+import faulthandler
 import json
 import logging
 import math
@@ -7,18 +8,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-import pandas as pd
-import vertexai
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-from vertexai import types as vtx_types
+faulthandler.enable()
 
 from src.ad_performance_agent.sub_agents.deep_learning.tools import (
     train_lightgbm_model,
     train_regression_model,
     train_transformer_model,
 )
+
+import pandas as pd
+import vertexai
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from vertexai import types as vtx_types
 from src.config import (
     AGENT_LLM_MODEL, CAPTION_LLM_MODEL, DATASET_SUBSETS,
     GCS_BUCKET_NAME, GCS_BUCKET_PREFIX, INFLUENCER_DATASET_PATH,
@@ -547,7 +550,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--execution-mode",
         choices=["batch", "single"],
-        default="batch",
+        default="single",
         help="Prediction mode: 'batch' (Google Batch API) or 'single' (one item at a time via direct API calls)",
     )
     parser.add_argument("--influencer-profiles-dir",

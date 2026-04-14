@@ -489,7 +489,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--raw-dir",
-        default="/Users/andreas.stergioulas/Downloads/Influencer brand dataset",
+        default="data/raw/Influencer brand dataset",
         help="Path to the raw dataset directory (containing img_resized/, post_info.txt, users_influencers_SPOD/)",
     )
     parser.add_argument(

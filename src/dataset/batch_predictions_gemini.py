@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from google.genai.types import CreateBatchJobConfig
 from tqdm import tqdm
 
-from src.config import GCS_BUCKET_NAME, GCS_BUCKET_PREFIX, JOB_WAIT_TIME
+from src.config import GCS_BUCKET_NAME, GCS_BUCKET_PREFIX, JOB_WAIT_TIME, PROJECT_ID
 from src.dataset.loaders import parse_annotation_line
 from src.dataset.text_conversion import save_predictions_to_txt
 from src.llm.prompts import select_prompt
@@ -18,8 +18,6 @@ from src.utils.gcp_utils import download_file_from_gcs, upload_file_to_gcs
 from src.utils.logger import logger
 
 load_dotenv()
-LOCATION = os.environ.get("GOOGLE_CLOUD_REGION", "global")
-PROJECT_ID = str(os.environ.get("GOOGLE_CLOUD_PROJECT"))
 client = initialize_gemini_client()
 
 
@@ -158,17 +156,16 @@ def arguments():
     argparser.add_argument(
         "--subset_dir",
         type=str,
-        default="data/influencer_dataset_top100_min100posts_nonsponsored",
+        default="",
         help="Path to the subset directory",
     )
-    # argparser.add_argument("--output_dir", default=os.path.join(SUBSET_DIR, "batched_jsonl_output"),type=str, help="Path to save the output JSONL file and config")
     argparser.add_argument(
         "--temperature", type=float, default=0.8, help="Model temperature"
     )
     argparser.add_argument(
         "--model_name",
         type=str,
-        default="gemini-3-flash-preview",
+        default="gemini-2.5-flash",
         help="Gemini model name (e.g., gemini-2.5-flash)",
     )
     argparser.add_argument(

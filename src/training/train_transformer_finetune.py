@@ -22,6 +22,17 @@ from src.utils.metrics import log_sample_predictions, build_sample_errors
 
 EARLY_STOPPING_PATIENCE = 5
 
+logger = logging.getLogger(__name__)
+
+
+def get_best_device() -> torch.device:
+    """Auto-detect the best available device: CUDA > Apple MPS > CPU."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
 
 class TextDataset(Dataset):
     """Dataset for text regression."""
@@ -148,6 +159,7 @@ def train_transformer(
     batch_size=16,
     lr=2e-5,
     max_length=256,
+    device: str | None = None,
     ):
     """Fine-tune a transformer model for engagement prediction."""
     with ExperimentTracker("transformer_finetuning") as tracker:
@@ -216,7 +228,7 @@ def train_transformer(
         val_loader = DataLoader(val_dataset, batch_size=batch_size * 2, shuffle=False)
         test_loader = DataLoader(test_dataset, batch_size=batch_size * 2, shuffle=False)
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device(device) if device else get_best_device()
         tracker.log(f"\nDevice: {device}")
 
         model = TransformerRegressor(model_name=model_name)
@@ -288,7 +300,7 @@ def train_transformer(
         tracker.log(f"{'=' * 70}")
 
         best_model_path = tracker.models_dir / "best_model.pt"
-        model.load_state_dict(torch.load(best_model_path))
+        model.load_state_dict(torch.load(best_model_path, map_location=device))
 
         test_loss, test_preds, test_labels = evaluate(
             model, test_loader, device, criterion

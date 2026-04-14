@@ -21,13 +21,13 @@ def create_data_argparser(description: str = "Training script") -> argparse.Argu
     parser.add_argument(
         "--dataset",
         choices=list(DATASET_SUBSETS.keys()),
-        default="top100",
+        default="top20",
         help="Dataset to use: " + ", ".join(DATASET_SUBSETS.keys()),
     )
     parser.add_argument(
         "--text_output_dir",
         type=str,
-        default="checkpoints/run_20260314_124407/it_3/text_output",
+        default="",
         help="Path to text outputs directory (relative to dataset dir)",
     )
     parser.add_argument(

@@ -71,13 +71,6 @@ Your task is to detect if a given Instagram post is sponsored content or not, ba
 """
 
 
-FEW_SHOT_RUBRICS = [
-    "R2 coefficient of determination",
-    "Mean Absolute Error (MAE)",
-    "Root Mean Squared Error (RMSE)",
-]
-
-
 def select_prompt(version):
     if version == "v0":
         return PROMPT_V0

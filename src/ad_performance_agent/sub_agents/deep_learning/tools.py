@@ -156,17 +156,10 @@ def _train_tree_regression(
         Dictionary with r2, mae, rmse, best_model_name, model, sample errors.
     """
 
-    if model_type == "xgboost":
-        from xgboost import XGBRegressor
-        regressor = XGBRegressor(**DEFAULT_XGBOOST_PARAMS)
-        model_name = "XGBoost"
-    elif model_type == "lightgbm":
-        from lightgbm import LGBMRegressor
-        lgbm_params = {**DEFAULT_LIGHTGBM_PARAMS, "reg_alpha": 0.1, "reg_lambda": 0.1}
-        regressor = LGBMRegressor(**lgbm_params)
-        model_name = "LightGBM"
-    else:
+    if model_type not in ("xgboost", "lightgbm"):
         raise ValueError(f"Unknown model_type: {model_type}. Use 'xgboost' or 'lightgbm'.")
+
+    model_name = "XGBoost" if model_type == "xgboost" else "LightGBM"
 
     logger.info("=" * 60)
     logger.info("Starting %s Regression Training", model_name)
@@ -200,6 +193,9 @@ def _train_tree_regression(
 
     logger.info("Target stats (likes):\n%s", df['y'].describe())
 
+    # Generate embeddings BEFORE importing XGBoost/LightGBM so that torch's
+    # libomp initialises its thread pool first (defense-in-depth for the
+    # dual-libomp conflict on macOS).
     X = generate_embeddings(df["text"].tolist(), model_name=embedding_model)
 
     if post_ids is not None:
@@ -220,9 +216,24 @@ def _train_tree_regression(
 
     logger.info("Training set: %d  Test set: %d", len(X_train), len(X_test))
 
+    # Lazy-import tree regressor AFTER embeddings to avoid loading a second
+    # libomp before torch has claimed the OMP runtime.
+    if model_type == "xgboost":
+        from xgboost import XGBRegressor
+        regressor = XGBRegressor(**DEFAULT_XGBOOST_PARAMS)
+    else:
+        from lightgbm import LGBMRegressor
+        lgbm_params = {**DEFAULT_LIGHTGBM_PARAMS, "reg_alpha": 0.1, "reg_lambda": 0.1}
+        regressor = LGBMRegressor(**lgbm_params)
+
     logger.info("Training %s Regressor...", model_name)
     pipeline = Pipeline([("regressor", regressor)])
-    pipeline.fit(X_train, y_train)
+    try:
+        pipeline.fit(X_train, y_train)
+    except Exception:
+        logger.exception("Failed during %s fit", model_name)
+        raise
+    logger.info("%s training completed.", model_name)
 
     y_pred_test = pipeline.predict(X_test)
     y_pred_train = pipeline.predict(X_train)
@@ -290,6 +301,7 @@ def train_transformer_model(
     batch_size: int = 16,
     lr: float = 2e-5,
     influencer_dir: str = None,
+    device: str = None,
 ) -> Dict[str, Any]:
     """Train a transformer model for Instagram post likes prediction.
 
@@ -302,6 +314,7 @@ def train_transformer_model(
         batch_size: Batch size for training. Default: 16
         lr: Learning rate. Default: 2e-5
         influencer_dir: Path to users_influencers_SPOD directory. Default: None (uses config)
+        device: Device to train on ("cuda", "mps", "cpu"). Default: None (auto-detect).
 
     Returns:
         Dictionary containing r2, mae, rmse, train_sample_errors, test_sample_errors.
@@ -336,6 +349,7 @@ def train_transformer_model(
         epochs=epochs,
         batch_size=batch_size,
         lr=lr,
+        device=device,
     )
 
     return metrics

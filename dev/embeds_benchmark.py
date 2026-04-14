@@ -218,12 +218,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--data-dir",
-        default="data/influencer_dataset_top20_min100posts_nonsponsored",
+        default="",
         help="Path to the dataset directory",
     )
     parser.add_argument(
         "--text-output-dir",
-        default="checkpoints/run_20260314_124407/it_3/text_output",
+        default="",
         help="Path to the best iteration text outputs",
     )
     parser.add_argument(

@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from src.utils.experiment_tracker import ExperimentTracker, create_experiment_summary
@@ -247,6 +246,8 @@ def train_and_evaluate_neural_nets(df, embedding_model="all-mpnet-base-v2"):
 
         # Generate embeddings
         tracker.log(f"\nGenerating text embeddings with {embedding_model}...")
+        from sentence_transformers import SentenceTransformer
+
         model = SentenceTransformer(embedding_model)
         X = model.encode(df["text"].tolist(), show_progress_bar=True)
 
