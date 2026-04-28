@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
    "torch>=2.6.0",
    "gcsfs>=2026.2.0",
-   "google-adk>=1.25.1",
+   "google-adk>=1.28.1",
    "google-cloud-storage>=3.9.0",
    "google-genai>=1.63.0",
    "grpcio>=1.79.0",
