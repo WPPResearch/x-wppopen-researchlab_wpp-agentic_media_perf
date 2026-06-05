@@ -5,7 +5,7 @@ description = "An agentic framework for analyzing Instagram influencer post perf
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-   "torch>=2.6.0",
+   "torch>=2.12.0",
    "gcsfs>=2026.2.0",
    "google-adk>=1.28.1",
    "google-cloud-storage>=3.9.0",
@@ -15,14 +15,14 @@ dependencies = [
    "lightgbm>=4.6.0",
    "matplotlib>=3.10.8",
    "pandas>=3.0.0",
-   "pillow>=12.1.1",
+   "pillow>=12.2.0",
    "python-dotenv>=1.2.2",
    "pytorch-lightning>=2.6.1",
    "scikit-learn>=1.8.0",
    "seaborn>=0.13.2",
    "sentence-transformers>=5.4.0",
    "tqdm>=4.67.3",
-   "transformers>=5.5.2",
+   "transformers>=5.9.0",
    "vertexai>=1.43.0",
    "xgboost>=3.2.0",
 ]
