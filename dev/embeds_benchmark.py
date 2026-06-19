@@ -18,6 +18,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 from src.dataset.dataloader import load_datav3
 from src.utils.embeddings import generate_embeddings
+from src.utils.safe_path import safe_path_join
 from src.training.model_configs import DEFAULT_XGBOOST_PARAMS
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def train_xgboost_with_embeddings(
     except ImportError:
         raise ImportError("XGBoost not installed. Install with: pip install xgboost")
 
-    json_dir = os.path.join(data_dir, "json_subset")
+    json_dir = str(safe_path_join(data_dir, "json_subset"))
 
     df = load_datav3(
         data_dir,

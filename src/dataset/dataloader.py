@@ -8,6 +8,7 @@ import pandas as pd
 
 from src.dataset.loaders import parse_annotation_line, parse_influencer_profile
 from src.utils.temporal_features import timestamp_to_text
+from src.utils.safe_path import safe_path_join
 from src.config import INFLUENCER_DATASET_PATH as _DEFAULT_INFLUENCER_PATH
 
 logger = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ def load_dataset(
     logger.info("Number of json files: %d", len(glob.glob(os.path.join(json_dir, "*.json"))))
 
     data = []
-    annotation_file = Path(os.path.join(data_dir, "subset_annotations.txt"))
+    annotation_file = safe_path_join(data_dir, "subset_annotations.txt")
     if not annotation_file.exists():
         logger.error("Annotation file not found at %s", annotation_file)
         return pd.DataFrame()
@@ -104,18 +105,23 @@ def load_dataset(
 
     for line in lines:
         post_info = parse_annotation_line(line)
-        json_file = os.path.join(json_dir, post_info["json_filename"])
-        text_file = os.path.join(
-            text_dir, post_info["json_filename"].replace(".json", ".txt")
-        )
+        try:
+            json_file = str(safe_path_join(json_dir, post_info["json_filename"]))
+            text_file = str(safe_path_join(
+                text_dir, post_info["json_filename"].replace(".json", ".txt")
+            ))
+        except ValueError:
+            logger.warning("Suspicious filename skipped: %s", post_info.get("json_filename"))
+            continue
         sponsor_label = post_info.get("sponsor_label", 0)
         if not os.path.exists(json_file) or not os.path.exists(text_file):
             logger.warning("Missing files for post: %s", post_info.get("post_id", "unknown"))
             continue
 
         influencer_name = post_info["influencer_name"]
-        influencer_file = (Path(influencer_dir) / influencer_name).resolve()
-        if not influencer_file.is_relative_to(Path(influencer_dir).resolve()):
+        try:
+            influencer_file = safe_path_join(influencer_dir, influencer_name)
+        except ValueError:
             logger.warning("Suspicious influencer name skipped: %s", influencer_name)
             continue
 

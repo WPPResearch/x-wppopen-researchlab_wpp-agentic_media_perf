@@ -35,6 +35,7 @@ from src.dataset.data_preparation import ensure_images_on_gcs, ensure_subset_exi
 from src.dataset.text_conversion import convert_subset_to_text, save_predictions_to_txt
 from src.llm.prompts import PROMPT_SIMPLE
 from src.utils.gcp_utils import download_file_from_gcs
+from src.utils.safe_path import safe_path_join
 
 load_dotenv()
 
@@ -136,7 +137,7 @@ class AdPerformanceAgent:
         # Ensure images are uploaded to GCS (for batch predictions)
         ensure_images_on_gcs(self.subset_dir, GCS_BUCKET_NAME, GCS_BUCKET_PREFIX)
 
-        self.output_dir = self.subset_dir / "batched_jsonl_output"
+        self.output_dir = safe_path_join(str(self.subset_dir), "batched_jsonl_output")
         self.text_output_dir = None
         self.batch_output_file = Path("gemini_batch_output.jsonl")
         self.history = ""
@@ -188,12 +189,16 @@ class AdPerformanceAgent:
         }
 
         # Save as JSON
-        checkpoint_file = self.checkpoint_dir / f"iteration_{iteration:03d}.json"
+        checkpoint_file = safe_path_join(
+            str(self.checkpoint_dir), f"iteration_{iteration:03d}.json"
+        )
         with open(checkpoint_file, "w", encoding="utf-8") as f:
             json.dump(checkpoint_data, f, indent=2, ensure_ascii=False)
 
         # Also save prompt as plain text for easy viewing
-        prompt_file = self.checkpoint_dir / f"iteration_{iteration:03d}_prompt.txt"
+        prompt_file = safe_path_join(
+            str(self.checkpoint_dir), f"iteration_{iteration:03d}_prompt.txt"
+        )
         with open(prompt_file, "w", encoding="utf-8") as f:
             f.write(prompt)
 
@@ -398,16 +403,19 @@ class AdPerformanceAgent:
         file_path = output_file.split("gs://")[-1].rsplit("/")[1:]
         file_path = "/".join(file_path)
 
+        pred_path = safe_path_join(str(self.output_dir), "pred.jsonl")
         download_file_from_gcs(
             bucket_name=bucket_name,
             gcs_blob_name=file_path,
-            local_destination_path=str(self.output_dir / "pred.jsonl"),
+            local_destination_path=str(pred_path),
         )
 
         logger.info("Converting batch output to text files...")
-        text_out = self.checkpoint_dir / f"it_{iteration}" / "text_output"
+        text_out = safe_path_join(
+            str(self.checkpoint_dir), os.path.join(f"it_{iteration}", "text_output")
+        )
         save_predictions_to_txt(
-            jsonl_path=str(self.output_dir / "pred.jsonl"),
+            jsonl_path=str(pred_path),
             output_dir=str(text_out),
         )
 
@@ -433,7 +441,9 @@ class AdPerformanceAgent:
         Output:
             Text descriptions saved to subset_dir/text_output/{timestamp}/it_{iteration}/responses/
         """
-        text_out = self.checkpoint_dir / f"it_{iteration}" / "text_output"
+        text_out = safe_path_join(
+            str(self.checkpoint_dir), os.path.join(f"it_{iteration}", "text_output")
+        )
         logger.info("Running single-item predictions to %s ...", text_out)
         convert_subset_to_text(
             subset_dir=self.subset_dir,
@@ -550,7 +560,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--execution-mode",
         choices=["batch", "single"],
-        default="single",
+        default="batch",
         help="Prediction mode: 'batch' (Google Batch API) or 'single' (one item at a time via direct API calls)",
     )
     parser.add_argument("--influencer-profiles-dir",

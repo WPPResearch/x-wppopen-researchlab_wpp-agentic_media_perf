@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import shutil
@@ -8,6 +9,9 @@ from tqdm import tqdm
 import ast
 
 from src.dataset.loaders import parse_influencer_profile
+from src.utils.safe_path import safe_path_join
+
+logger = logging.getLogger(__name__)
 
 
 def create_dataset_subset(
@@ -35,7 +39,7 @@ def create_dataset_subset(
     # 1. Setup paths
     subset_img_dir = os.path.join(target_dir, "img_subset")
     subset_json_dir = os.path.join(target_dir, "json_subset")
-    subset_annotation_path = os.path.join(target_dir, "subset_annotations.txt")
+    subset_annotation_path = str(safe_path_join(target_dir, "subset_annotations.txt"))
 
     if not dry_run:
         os.makedirs(subset_img_dir, exist_ok=True)
@@ -131,9 +135,16 @@ def create_dataset_subset(
             # Check Images
             valid_images = []
             for img_name in image_filenames:
-                src = os.path.join(source_img_dir, img_name)
+                try:
+                    src = str(safe_path_join(source_img_dir, img_name))
+                    dst = str(safe_path_join(subset_img_dir, img_name))
+                except ValueError:
+                    logger.warning("Suspicious image name skipped: %s", img_name)
+                    all_files_ok = False
+                    missing_images += 1
+                    continue
                 if os.path.exists(src):
-                    valid_images.append((src, os.path.join(subset_img_dir, img_name)))
+                    valid_images.append((src, dst))
                 else:
                     all_files_ok = False
                     missing_images += 1
@@ -141,31 +152,33 @@ def create_dataset_subset(
             # Check JSON (if column 4 is valid)
             json_task = None
             if copy_json and json_filename and json_filename.endswith(".json"):
-                # Prioritize 'json' directory, then 'json_data', then source_img_dir
-                json_candidates = [
-                    os.path.join(
-                        os.path.dirname(source_img_dir), "json", json_filename
-                    ),
-                    os.path.join(
-                        os.path.dirname(source_img_dir), "json_data", json_filename
-                    ),
-                    os.path.join(source_img_dir, json_filename),
-                ]
+                try:
+                    json_candidates = [
+                        str(safe_path_join(
+                            os.path.dirname(source_img_dir), os.path.join("json", json_filename)
+                        )),
+                        str(safe_path_join(
+                            os.path.dirname(source_img_dir), os.path.join("json_data", json_filename)
+                        )),
+                        str(safe_path_join(source_img_dir, json_filename)),
+                    ]
+                except ValueError:
+                    logger.warning("Suspicious JSON filename skipped: %s", json_filename)
+                    missing_jsons += 1
+                    json_candidates = []
 
                 found_json = False
                 for json_src in json_candidates:
                     if os.path.exists(json_src):
                         json_task = (
                             json_src,
-                            os.path.join(subset_json_dir, json_filename),
+                            str(safe_path_join(subset_json_dir, json_filename)),
                         )
                         found_json = True
                         break
 
-                if not found_json:
+                if not found_json and json_candidates:
                     missing_jsons += 1
-                    # If JSON is mandatory, uncomment below:
-                    # all_files_ok = False
 
             # Perform Copy
             if all_files_ok:
@@ -248,7 +261,7 @@ def create_ranked_subset_by_followers(
     # Setup paths
     subset_img_dir = os.path.join(target_dir, "img_subset")
     subset_json_dir = os.path.join(target_dir, "json_subset")
-    subset_annotation_path = os.path.join(target_dir, "subset_annotations.txt")
+    subset_annotation_path = str(safe_path_join(target_dir, "subset_annotations.txt"))
 
     if not dry_run:
         os.makedirs(subset_img_dir, exist_ok=True)
@@ -322,7 +335,11 @@ def create_ranked_subset_by_followers(
     influencer_data = []
 
     for name in tqdm(qualified_influencers.keys(), desc="Loading profiles"):
-        profile_path = Path(influencer_profiles_dir) / name
+        try:
+            profile_path = safe_path_join(influencer_profiles_dir, name)
+        except ValueError:
+            logger.warning("Suspicious influencer name skipped: %s", name)
+            continue
         profile = parse_influencer_profile(profile_path)
 
         if profile is not None:
@@ -390,11 +407,16 @@ def create_ranked_subset_by_followers(
 
                 # Check images
                 for img_name in image_filenames:
-                    src = os.path.join(source_img_dir, img_name)
+                    try:
+                        src = str(safe_path_join(source_img_dir, img_name))
+                        dst = str(safe_path_join(subset_img_dir, img_name))
+                    except ValueError:
+                        logger.warning("Suspicious image name skipped: %s", img_name)
+                        all_files_ok = False
+                        missing_images += 1
+                        continue
                     if os.path.exists(src):
-                        valid_images.append(
-                            (src, os.path.join(subset_img_dir, img_name))
-                        )
+                        valid_images.append((src, dst))
                     else:
                         all_files_ok = False
                         missing_images += 1
@@ -402,27 +424,32 @@ def create_ranked_subset_by_followers(
                 # Check JSON
                 json_task = None
                 if copy_json and json_filename and json_filename.endswith(".json"):
-                    json_candidates = [
-                        os.path.join(
-                            os.path.dirname(source_img_dir), "json", json_filename
-                        ),
-                        os.path.join(
-                            os.path.dirname(source_img_dir), "json_data", json_filename
-                        ),
-                        os.path.join(source_img_dir, json_filename),
-                    ]
+                    try:
+                        json_candidates = [
+                            str(safe_path_join(
+                                os.path.dirname(source_img_dir), os.path.join("json", json_filename)
+                            )),
+                            str(safe_path_join(
+                                os.path.dirname(source_img_dir), os.path.join("json_data", json_filename)
+                            )),
+                            str(safe_path_join(source_img_dir, json_filename)),
+                        ]
+                    except ValueError:
+                        logger.warning("Suspicious JSON filename skipped: %s", json_filename)
+                        missing_jsons += 1
+                        json_candidates = []
 
                     found_json = False
                     for json_src in json_candidates:
                         if os.path.exists(json_src):
                             json_task = (
                                 json_src,
-                                os.path.join(subset_json_dir, json_filename),
+                                str(safe_path_join(subset_json_dir, json_filename)),
                             )
                             found_json = True
                             break
 
-                    if not found_json:
+                    if not found_json and json_candidates:
                         missing_jsons += 1
 
                 # Copy files
@@ -519,9 +546,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    source_images = os.path.join(args.raw_dir, "img_resized")
-    annotation_file = os.path.join(args.raw_dir, "post_info.txt")
-    influencer_profiles = os.path.join(args.raw_dir, "users_influencers_SPOD")
+    source_images = str(safe_path_join(args.raw_dir, "img_resized"))
+    annotation_file = str(safe_path_join(args.raw_dir, "post_info.txt"))
+    influencer_profiles = str(safe_path_join(args.raw_dir, "users_influencers_SPOD"))
 
     sponsor_suffix = ""
     if args.sponsor_filter == 0:

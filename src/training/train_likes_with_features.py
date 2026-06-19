@@ -13,6 +13,7 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 from src.dataset.loaders import parse_influencer_profile
 from src.utils.temporal_features import extract_temporal_features
+from src.utils.safe_path import safe_path_join
 from src.utils.experiment_tracker import ExperimentTracker, create_experiment_summary
 from src.utils.metrics import log_sample_predictions
 from src.training.model_configs import DEFAULT_XGBOOST_PARAMS, DEFAULT_LIGHTGBM_PARAMS
@@ -128,9 +129,10 @@ def extract_post_features(json_file: str, text_content: str) -> dict:
 
 def load_data_with_features(data_dir: str, influencer_dir: str = _DEFAULT_INFLUENCER_PATH):
     """Load data with both text and numerical features."""
-    text_dir = os.path.join(data_dir, "text_output_gemini_2.5_flash", "responses")
-    json_dir = os.path.join(data_dir, "json_subset")
-    annotation_file = Path(os.path.join(data_dir, "subset_annotations.txt"))
+    text_dir = str(safe_path_join(data_dir, "text_output_gemini_2.5_flash"))
+    text_dir = str(safe_path_join(text_dir, "responses"))
+    json_dir = str(safe_path_join(data_dir, "json_subset"))
+    annotation_file = safe_path_join(data_dir, "subset_annotations.txt")
 
     if not annotation_file.exists():
         logger.error("Annotation file not found at %s", annotation_file)
@@ -147,10 +149,14 @@ def load_data_with_features(data_dir: str, influencer_dir: str = _DEFAULT_INFLUE
 
     for line in lines:
         post_info = parse_annotation_line(line)
-        json_file = os.path.join(json_dir, post_info["json_filename"])
-        text_file = os.path.join(
-            text_dir, post_info["json_filename"].replace(".json", ".txt")
-        )
+        try:
+            json_file = str(safe_path_join(json_dir, post_info["json_filename"]))
+            text_file = str(safe_path_join(
+                text_dir, post_info["json_filename"].replace(".json", ".txt")
+            ))
+        except ValueError:
+            logger.warning("Suspicious filename skipped: %s", post_info.get("json_filename"))
+            continue
 
         if not os.path.exists(json_file) or not os.path.exists(text_file):
             continue
@@ -166,8 +172,9 @@ def load_data_with_features(data_dir: str, influencer_dir: str = _DEFAULT_INFLUE
 
         # Get influencer profile
         influencer_name = post_info["influencer_name"]
-        influencer_file = (Path(influencer_dir) / influencer_name).resolve()
-        if not influencer_file.is_relative_to(Path(influencer_dir).resolve()):
+        try:
+            influencer_file = safe_path_join(influencer_dir, influencer_name)
+        except ValueError:
             logger.warning("Suspicious influencer name skipped: %s", influencer_name)
             continue
         influencer_data = parse_influencer_profile(influencer_file)

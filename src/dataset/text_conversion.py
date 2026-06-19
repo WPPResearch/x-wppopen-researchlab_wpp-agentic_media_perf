@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 from pathlib import Path
@@ -8,6 +9,9 @@ from dotenv import load_dotenv
 from src.dataset.loaders import parse_annotation_line
 from src.llm.utils import initialize_gemini_client
 from src.llm.multimodal_to_text import llm_post_to_text
+from src.utils.safe_path import safe_path_join
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -34,7 +38,7 @@ def convert_subset_to_text(
     output_dir = Path(output_dir)
     img_dir = subset_dir / "img_subset"
     json_dir = subset_dir / "json_subset"
-    annotation_file = subset_dir / "subset_annotations.txt"
+    annotation_file = safe_path_join(str(subset_dir), "subset_annotations.txt")
 
     if not annotation_file.exists():
         print(f"Error: Annotation file not found at {annotation_file}")
@@ -71,34 +75,42 @@ def convert_subset_to_text(
         # Load JSON context
         json_content = ""
         if json_file:
-            json_path = json_dir / json_file
+            try:
+                json_path = safe_path_join(str(json_dir), json_file)
+            except ValueError:
+                logger.warning("Suspicious JSON filename skipped: %s", json_file)
+                continue
             if json_path.exists():
                 try:
                     with open(json_path, "r", encoding="utf-8") as jf:
-                        # Load and dump to ensure valid JSON string, or just read text?
-                        # Reading text is safer to preserve exact content, but formatting helps.
                         data = json.load(jf)
                         json_content = json.dumps(data, indent=2)
                 except Exception:
                     print("Error parsing JSON file:", json_path)
-                    # Ignore JSON errors, proceed with image only
 
         # Process each image in the entry
         image_prompts = []
         for img_name in images:
-            img_path = img_dir / img_name
+            try:
+                img_path = safe_path_join(str(img_dir), img_name)
+            except ValueError:
+                logger.warning("Suspicious image name skipped: %s", img_name)
+                fail_count += 1
+                continue
             if not img_path.exists():
                 continue
             try:
-                # Open image
                 image = Image.open(img_path)
                 image_prompts.append(image)
             except Exception as e:
                 print(f"Error opening image {img_name}: {e}")
                 fail_count += 1
                 continue
-            # Check if output already exists (optional: skip if exists? No, overwrite for now)
-        out_path = responses_dir / f"{Path(json_file).stem}.txt"
+        try:
+            out_path = safe_path_join(str(responses_dir), f"{Path(json_file).stem}.txt")
+        except ValueError:
+            logger.warning("Suspicious output filename skipped: %s", json_file)
+            continue
 
         try:
             # Open image

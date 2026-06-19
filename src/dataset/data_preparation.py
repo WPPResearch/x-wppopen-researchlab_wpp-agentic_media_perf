@@ -20,6 +20,7 @@ from src.config import (
     PROJECT_ROOT,
     RAW_DATASET_PATH,
 )
+from src.utils.safe_path import safe_path_join
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,11 @@ def _extract_zip_flat(zip_path: Path, dest_dir: Path, *, extensions: tuple[str, 
                 continue
             if extensions and not filename.lower().endswith(extensions):
                 continue
-            target = dest_dir / filename
+            try:
+                target = safe_path_join(str(dest_dir), filename)
+            except ValueError:
+                logger.warning("Suspicious zip member name skipped: %s", member.filename)
+                continue
             if not target.exists():
                 with zf.open(member) as src, open(target, "wb") as dst:
                     shutil.copyfileobj(src, dst)

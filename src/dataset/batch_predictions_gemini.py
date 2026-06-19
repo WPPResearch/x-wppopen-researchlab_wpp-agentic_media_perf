@@ -15,6 +15,7 @@ from src.dataset.text_conversion import save_predictions_to_txt
 from src.llm.prompts import select_prompt
 from src.llm.utils import initialize_gemini_client
 from src.utils.gcp_utils import download_file_from_gcs, upload_file_to_gcs
+from src.utils.safe_path import safe_path_join
 from src.utils.logger import logger
 
 load_dotenv()
@@ -43,8 +44,8 @@ def generate_batched_jsonl(
     """
     subset_dir = Path(subset_dir)
     output_dir = Path(output_dir)
-    json_dir = subset_dir / "json_subset"
-    annotation_file = subset_dir / "subset_annotations.txt"
+    json_dir = safe_path_join(str(subset_dir), "json_subset")
+    annotation_file = safe_path_join(str(subset_dir), "subset_annotations.txt")
 
     # Derive GCS base path if not provided
     if gcs_base_path is None:
@@ -64,7 +65,11 @@ def generate_batched_jsonl(
 
         caption = " "
         if json_file:
-            json_path = json_dir / json_file
+            try:
+                json_path = safe_path_join(str(json_dir), json_file)
+            except ValueError:
+                logger.warning("Suspicious JSON filename skipped: %s", json_file)
+                continue
             if json_path.exists():
                 try:
                     with open(json_path, "r", encoding="utf-8") as jf:
@@ -77,6 +82,11 @@ def generate_batched_jsonl(
                     logger.error("Error parsing JSON file %s: %s", json_path, e)
         images_dict = [{"text": prompt_template + caption}]
         for img_name in images:
+            try:
+                safe_path_join(gcs_base_path, img_name)
+            except ValueError:
+                logger.warning("Suspicious image name skipped in GCS URI: %s", img_name)
+                continue
             cloud_uri = f"gs://{bucket_name}/{gcs_base_path}/{img_name}"
             images_dict.append(
                 {"file_data": {"file_uri": cloud_uri, "mime_type": "image/jpeg"}}
@@ -94,13 +104,14 @@ def generate_batched_jsonl(
             },
         }
         jsonl_data.append(jsonl_entry)
-    with open(output_dir / "gemini_input.jsonl", "w", encoding="utf-8") as out_f:
+    output_jsonl_path = safe_path_join(str(output_dir), "gemini_input.jsonl")
+    with open(output_jsonl_path, "w", encoding="utf-8") as out_f:
         for entry in jsonl_data:
             json.dump(entry, out_f)
             out_f.write("\n")
     gcs_url = upload_file_to_gcs(
         bucket_name=bucket_name,
-        local_file_path=str(output_dir / "gemini_input.jsonl"),
+        local_file_path=str(output_jsonl_path),
         gcs_destination_blob_name=f"{GCS_BUCKET_PREFIX}/batch_jobs/gemini_input.jsonl",
     )
     return gcs_url
@@ -234,13 +245,15 @@ if __name__ == "__main__":
     file_path = output_file.split("gs://")[-1].rsplit("/")[1:]
     file_path = "/".join(file_path)
 
+    pred_path = safe_path_join(OUTPUT_DIR, "pred.jsonl")
     download_file_from_gcs(
         bucket_name=bucket_name,
         gcs_blob_name=file_path,
-        local_destination_path=str(Path(OUTPUT_DIR) / "pred.jsonl"),
+        local_destination_path=str(pred_path),
     )
     print("Converting batch output to text files...")
+    text_output_path = safe_path_join(OUTPUT_DIR, os.path.join("text_output", timestamp))
     save_predictions_to_txt(
-        jsonl_path=str(Path(OUTPUT_DIR) / "pred.jsonl"),
-        output_dir=str(Path(OUTPUT_DIR) / "text_output" / timestamp),
+        jsonl_path=str(pred_path),
+        output_dir=str(text_output_path),
     )

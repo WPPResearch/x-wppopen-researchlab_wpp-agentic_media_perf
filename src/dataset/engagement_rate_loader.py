@@ -9,6 +9,7 @@ import pandas as pd
 from src.dataset.loaders import parse_influencer_profile
 from pathlib import Path
 from src.dataset.dataloader import load_dataset
+from src.utils.safe_path import safe_path_join
 from src.config import INFLUENCER_DATASET_PATH as _DEFAULT_INFLUENCER_PATH
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,12 @@ def load_engagement_rate_data(
     # Add follower counts from influencer profiles
     followers_list = []
     for _, row in df.iterrows():
-        influencer_file = (Path(influencer_dir) / row["influencer_name"]).resolve()
+        try:
+            influencer_file = safe_path_join(influencer_dir, row["influencer_name"])
+        except ValueError:
+            logger.warning("Suspicious influencer name skipped: %s", row["influencer_name"])
+            followers_list.append(0)
+            continue
         profile = parse_influencer_profile(influencer_file)
         followers_list.append(profile["followers"] if profile else 0)
 

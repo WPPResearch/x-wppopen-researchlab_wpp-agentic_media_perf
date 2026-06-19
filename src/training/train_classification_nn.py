@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 
 from src.dataset.dataloader import load_datav2, convert_to_classification_labels
 from src.utils.embeddings import generate_embeddings
+from src.utils.safe_path import safe_path_join
 from src.config import DATASET_SUBSETS
 
 from dotenv import load_dotenv
@@ -92,8 +93,11 @@ def main(args):
 
     print(f"Loading data from {DATA_DIR}...")
 
+    data_dir_resolved = str(safe_path_join(
+        os.path.dirname(DATA_DIR), os.path.basename(DATA_DIR)
+    ))
     df = load_datav2(
-        DATA_DIR, args.text_output_dir, classification_task=args.classification_task
+        data_dir_resolved, args.text_output_dir, classification_task=args.classification_task
     )
 
     if df is None or df.empty:

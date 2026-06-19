@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 from src.training.train_transformer_finetune import train_transformer
 from src.utils.metrics import log_sample_predictions
+from src.utils.safe_path import safe_path_join
 
 from src.training.train_classification_nn import main as train_main
 from src.utils.embeddings import generate_embeddings
@@ -166,7 +167,7 @@ def _train_tree_regression(
     logger.info("  Dataset: %s  Text dir: %s  Embedding: %s",
         dataset_size, text_output_dir, embedding_model)
 
-    json_dir = os.path.join(data_dir, "json_subset")
+    json_dir = str(safe_path_join(data_dir, "json_subset"))
 
     logger.info("Loading data from: %s  Text dir: %s  JSON dir: %s",
         data_dir, text_output_dir, json_dir)
@@ -325,7 +326,7 @@ def train_transformer_model(
     logger.info("  Model: %s  Dataset: %s  Epochs: %d  Batch size: %d  LR: %s",
         transformer_model_name, dataset_size, epochs, batch_size, lr)
 
-    json_dir = os.path.join(data_dir, "json_subset")
+    json_dir = str(safe_path_join(data_dir, "json_subset"))
 
     load_kwargs = dict(
         text_dir=text_output_dir,
