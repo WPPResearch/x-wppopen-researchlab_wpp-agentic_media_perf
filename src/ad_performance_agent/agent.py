@@ -50,7 +50,8 @@ def resolve_subset_dir(base_dir: Path, dataset_size: str) -> Path:
             f"Unknown dataset_size '{dataset_size}'. "
             f"Choose from: {list(DATASET_SUBSETS.keys())}"
         )
-    return base_dir / "data" / DATASET_SUBSETS[dataset_size]
+    data_dir = safe_path_join(str(base_dir), "data")
+    return safe_path_join(str(data_dir), DATASET_SUBSETS[dataset_size])
 
 
 class AdPerformanceAgent:
