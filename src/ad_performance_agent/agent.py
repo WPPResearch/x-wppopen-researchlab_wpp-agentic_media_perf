@@ -118,7 +118,12 @@ class AdPerformanceAgent:
         self.optimize_method = optimize_method
         self.initial_prompt = initial_prompt
         self.execution_mode = execution_mode
-        self.influencer_profiles_dir = influencer_profiles_dir or INFLUENCER_DATASET_PATH
+        self.influencer_profiles_dir = str(
+            safe_path_join(
+                str(Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))),
+                influencer_profiles_dir or INFLUENCER_DATASET_PATH,
+            )
+        )
         self.transformer_model_name = transformer_model_name
         self.epochs = epochs
         self.batch_size = batch_size
